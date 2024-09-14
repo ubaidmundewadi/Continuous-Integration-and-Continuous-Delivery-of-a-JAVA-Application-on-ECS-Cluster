@@ -91,7 +91,7 @@ This project demonstrates the implementation of a Continuous Integration (CI) an
 5. **Production Deployment**: After testing and merging the code into the production branch, Jenkins triggers the production pipeline to deploy the application to the production ECS cluster.
 
 ## Jenkins
-![Screenshot 2024-09-10 001957](https://github.com/user-attachments/assets/133708a0-7a4f-4ddd-a58a-7e7a50f0bd9e)
+![Screenshot 2024-09-14 114806](https://github.com/user-attachments/assets/ccd12422-c4a5-4dfe-a57a-bb1ce1c43008)
 
 ## SonarQube
 ![Screenshot 2024-09-10 001611](https://github.com/user-attachments/assets/15511c40-0f08-476a-bae4-88ef1cd7fa93)
