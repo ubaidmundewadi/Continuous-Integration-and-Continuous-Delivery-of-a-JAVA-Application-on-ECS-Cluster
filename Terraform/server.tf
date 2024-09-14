@@ -3,25 +3,72 @@ variable "key_name" {
   default = "vprofile-prod-key" # Replace with the name of your existing key pair
 }
 
-# Reference existing security groups by ID
-variable "jenkins_sg_id" {
-  default = "sg-0871ca81f7eb09fc5" # Replace with the Security Group ID for Jenkins
+# Create Security Group for Jenkins
+resource "aws_security_group" "jenkins_sg" {
+  name        = "jenkins-sg"
+  description = "Security group for Jenkins server"
+
+  ingress {
+    description = "Allow SSH from my IP"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["<YOUR_IP>/32"]  # Replace with your IP
+  }
+
+  ingress {
+    description = "Allow Jenkins (HTTP) from my IP"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["<YOUR_IP>/32"]  # Replace with your IP
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "jenkins-sg"
+  }
 }
 
-variable "nexus_sg_id" {
-  default = "sg-0837b3125bea23f55" # Replace with the Security Group ID for Nexus
+# Create Security Group for SonarQube
+resource "aws_security_group" "sonar_sg" {
+  name        = "sonarqube-sg"
+  description = "Security group for SonarQube server"
+
+  ingress {
+    description = "Allow HTTP (SonarQube) from my IP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["<YOUR_IP>/32"]  # Replace with your IP
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "sonarqube-sg"
+  }
 }
 
-variable "sonar_sg_id" {
-  default = "sg-0fd3499d290e23c1e" # Replace with the Security Group ID for SonarQube
-}
+
 
 # Jenkins EC2 Instance
 resource "aws_instance" "jenkins_server" {
   ami                    = "ami-0a0e5d9c7acc336f1" # Ubuntu 22.04 LTS (replace with correct AMI ID)
   instance_type          = "t2.small"
   key_name               = var.key_name
-  vpc_security_group_ids = [var.jenkins_sg_id]
+  vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
 
   tags = {
     Name = "jenkins-server"
@@ -59,7 +106,7 @@ resource "aws_instance" "sonar_server" {
   ami                    = "ami-0a0e5d9c7acc336f1" # Ubuntu 22.04 LTS AMI (replace with correct AMI ID)
   instance_type          = "t2.medium"
   key_name               = var.key_name
-  vpc_security_group_ids = [var.sonar_sg_id]
+  vpc_security_group_ids = [aws_security_group.sonar_sg.id]
 
   tags = {
     Name = "sonar-server"
