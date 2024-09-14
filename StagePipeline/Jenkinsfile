@@ -7,9 +7,6 @@ pipeline {
     }
 
     environment {
-        SNAP_REPO = 'vprofile-snapshot'
-        RELEASE_REPO = 'vprofile-release'
-        CENTRAL_REPO = 'vpro-maven-central'
         SONARSERVER = 'sonarserver'
         SONARSCANNER = 'sonarscanner'
         registryCredential = 'ecr:us-east-1:awscreds'
@@ -22,13 +19,13 @@ pipeline {
     stages {
        	stage('UNIT TEST'){
             steps {
-                sh 'mvn -s settings.xml test'
+                sh 'mvn test'
             }
         }
 
         stage ('CODE ANALYSIS WITH CHECKSTYLE'){
             steps {
-                sh 'mvn -s settings.xml checkstyle:checkstyle'
+                sh 'mvn checkstyle:checkstyle'
             }
             post {
                 success {
