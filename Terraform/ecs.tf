@@ -15,22 +15,60 @@ resource "aws_ecs_task_definition" "vprofilestaging_task" {
   memory                   = "2048" # 2 GB RAM
   cpu                      = "1024" # 1 GB CPU
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
-  container_definitions = jsonencode([
-    {
+  container_definitions = jsonencode([{
       name      = "vprofile-app"
       image     = "211125570623.dkr.ecr.us-east-1.amazonaws.com/vprofileappimg" # Replace with your ECR repository
       essential = true
       memory    = 2048
       cpu       = 1024
-      portMappings = [
-        {
-          containerPort = 8080
-          hostPort      = 8080
-          protocol      = "tcp"
-        }
-      ]
-    }
-  ])
+      portMappings = [{
+        containerPort = 8080
+        hostPort      = 8080
+        protocol      = "tcp"
+      }]
+  }])
+}
+
+# Create Security Group for Load Balancer
+resource "aws_security_group" "lb_sg" {
+  name        = "vprofilestaging-lb-sg"
+  description = "Security group for load balancer"
+  vpc_id      = "vpc-0d0e6a4336759405d" # Replace with your VPC ID
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"  # Allows all outbound traffic
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# Create Security Group for ECS service
+resource "aws_security_group" "ecs_sg" {
+  name        = "vprofilestaging-ecs-sg"
+  description = "Security group for ECS service"
+  vpc_id      = "vpc-0d0e6a4336759405d" # Replace with your VPC ID
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    security_groups = [aws_security_group.lb_sg.id]  # Allow traffic from the load balancer security group
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"  # Allows all outbound traffic
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 # Create the ECS service
@@ -49,7 +87,7 @@ resource "aws_ecs_service" "vprofilestaging_service" {
 
   network_configuration {
     subnets          = ["subnet-0c1048568e84db447", "subnet-0507610f8da69bac2", "subnet-082501165db7449ff"] # Replace with your subnet IDs
-    security_groups  = ["sg-04c360b3891e0ef15"]                                                             # Replace with your security group IDs
+    security_groups  = [aws_security_group.ecs_sg.id]  # Use the ECS service security group
     assign_public_ip = true
   }
 
@@ -80,11 +118,9 @@ resource "aws_lb" "vprofilestaging_lb" {
   name               = "vprofilestaging-lb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = ["sg-0b7b0813bcc51ad55"]                                                             # Replace with your security group ID
+  security_groups    = [aws_security_group.lb_sg.id]  # Use the Load Balancer security group
   subnets            = ["subnet-0c1048568e84db447", "subnet-0507610f8da69bac2", "subnet-082501165db7449ff"] # Replace with your subnet IDs
 }
-
-
 
 # Create Load Balancer Listener
 resource "aws_lb_listener" "vprofilestaging_listener" {
